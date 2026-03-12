@@ -1,13 +1,8 @@
 import numpy as np
-from itertools import permutations
 
 
 def build_completion_matrix(matrix: np.ndarray, job_order: list[int]) -> np.ndarray:
-    """Build completion time matrix C[i][j] for given job order on flow shop.
-    matrix: shape (n_jobs, n_machines) — processing times
-    job_order: list of job indices in processing order
-    Returns: completion time matrix of shape (len(job_order), n_machines)
-    """
+    """Build completion time matrix C[i][j] for given job order on flow shop."""
     n = len(job_order)
     m = matrix.shape[1]
     C = np.zeros((n, m))
@@ -49,99 +44,116 @@ def calculate_metrics(matrix: np.ndarray, job_order: list[int]) -> dict:
 
 # === Optimization Methods ===
 
-def method_bottleneck_distance(matrix: np.ndarray) -> list[int]:
-    """Метод 1: Удалённость узкого места.
-    Sort jobs by bottleneck position (machine index with max time) descending.
-    Jobs with bottleneck closer to end go first.
+
+def method_johnson_n(matrix: np.ndarray) -> list[int]:
+    """Алгоритм Джонсона для N станков.
+    Поиск минимума только на 1-м и последнем станке.
+    Если минимум на 1-м — деталь в начало, на последнем — в конец.
     """
     n, m = matrix.shape
-    bottleneck_positions = []
-    for i in range(n):
-        max_machine = int(np.argmax(matrix[i]))
-        bottleneck_positions.append((i, max_machine))
+    col_first = matrix[:, 0].copy()
+    col_last = matrix[:, m - 1].copy()
 
-    # Sort: jobs with bottleneck on later machines first
-    bottleneck_positions.sort(key=lambda x: x[1], reverse=True)
-    return [x[0] for x in bottleneck_positions]
+    remaining = set(range(n))
+    result = [None] * n
+    left = 0
+    right = n - 1
 
+    while remaining:
+        best_val = float("inf")
+        best_job = -1
+        best_is_first = True
 
-def method_greedy_limited_search(matrix: np.ndarray) -> list[int]:
-    """Метод 2: Ограниченный перебор (жадный выбор).
-    At each step, pick the job that minimizes partial makespan.
-    """
-    n = matrix.shape[0]
-    remaining = list(range(n))
-    order = []
-
-    for _ in range(n):
-        best_job = None
-        best_makespan = float("inf")
         for job in remaining:
-            candidate = order + [job]
-            ms = calculate_makespan(matrix, candidate)
-            if ms < best_makespan:
-                best_makespan = ms
+            if col_first[job] < best_val:
+                best_val = col_first[job]
                 best_job = job
-        order.append(best_job)
+                best_is_first = True
+            if col_last[job] < best_val:
+                best_val = col_last[job]
+                best_job = job
+                best_is_first = False
+            if col_first[job] == best_val and col_first[job] <= col_last[job]:
+                best_job = job
+                best_is_first = True
+
+        if best_is_first:
+            result[left] = best_job
+            left += 1
+        else:
+            result[right] = best_job
+            right -= 1
+
         remaining.remove(best_job)
 
-    return order
+    return result
 
 
-def method_max_last_machine(matrix: np.ndarray) -> list[int]:
-    """Метод 3: Максимальное время на последнем станке.
-    Sort by processing time on last machine, descending.
+def method_generalization_1(matrix: np.ndarray) -> list[int]:
+    """Первое обобщение Джонсона.
+    Сначала запускают детали с минимальным временем на 1-м станке
+    в порядке возрастания этого времени.
+    """
+    n = matrix.shape[0]
+    jobs = [(i, matrix[i, 0]) for i in range(n)]
+    jobs.sort(key=lambda x: x[1])
+    return [x[0] for x in jobs]
+
+
+def method_generalization_2(matrix: np.ndarray) -> list[int]:
+    """Второе обобщение Джонсона.
+    Сначала запускают детали с максимальным временем на последнем станке
+    в порядке убывания этого времени.
     """
     n, m = matrix.shape
-    last_times = [(i, matrix[i, m - 1]) for i in range(n)]
-    last_times.sort(key=lambda x: x[1], reverse=True)
-    return [x[0] for x in last_times]
+    jobs = [(i, matrix[i, m - 1]) for i in range(n)]
+    jobs.sort(key=lambda x: x[1], reverse=True)
+    return [x[0] for x in jobs]
 
 
-def method_max_total_time(matrix: np.ndarray) -> list[int]:
-    """Метод 4: Максимальное суммарное время.
-    Sort by total processing time across all machines, descending.
+def method_generalization_3(matrix: np.ndarray) -> list[int]:
+    """Третье обобщение Джонсона.
+    Сначала запускают детали, у которых «узкое место» (станок с макс. временем)
+    находится дальше от начала процесса обработки.
     """
     n = matrix.shape[0]
-    totals = [(i, matrix[i].sum()) for i in range(n)]
-    totals.sort(key=lambda x: x[1], reverse=True)
-    return [x[0] for x in totals]
+    jobs = [(i, int(np.argmax(matrix[i]))) for i in range(n)]
+    jobs.sort(key=lambda x: x[1], reverse=True)
+    return [x[0] for x in jobs]
 
 
-def method_min_first_machine(matrix: np.ndarray) -> list[int]:
-    """Метод 5: Минимальное время на 1-м станке.
-    Sort by processing time on first machine, ascending.
+def method_generalization_4(matrix: np.ndarray) -> list[int]:
+    """Четвёртое обобщение Джонсона.
+    Сначала обрабатывают детали с максимальным суммарным временем
+    на всех станках, в порядке убывания.
     """
     n = matrix.shape[0]
-    first_times = [(i, matrix[i, 0]) for i in range(n)]
-    first_times.sort(key=lambda x: x[1])
-    return [x[0] for x in first_times]
+    jobs = [(i, matrix[i].sum()) for i in range(n)]
+    jobs.sort(key=lambda x: x[1], reverse=True)
+    return [x[0] for x in jobs]
 
 
 def method_petrov_sokolitsyn(matrix: np.ndarray) -> list[int]:
-    """Метод 6: Метод Петрова-Соколицына.
-    For each job compute:
-      first_sum = sum of times on all machines except first
-      second_sum = sum of times on all machines except last
-      diff = first_sum - second_sum
-    Generate 3 candidate sequences:
-      1) Sort by diff descending
-      2) Sort by first_sum descending
-      3) Sort by second_sum ascending
-    Return the one with minimum makespan.
+    """Метод Петрова-Соколицына.
+    1) Первая сумма = сумма на всех станках кроме 1-го
+    2) Вторая сумма = сумма на всех станках кроме последнего
+    3) Разность = первая - вторая
+    4) Убывание первой суммы
+    5) Возрастание второй суммы
+    6) Убывание разности
+    7) Выбрать лучшую из трёх
     """
     n, m = matrix.shape
     jobs_data = []
     for i in range(n):
-        first_sum = matrix[i, 1:].sum()   # all except first machine
-        second_sum = matrix[i, :-1].sum()  # all except last machine
+        first_sum = matrix[i, 1:].sum()
+        second_sum = matrix[i, :-1].sum()
         diff = first_sum - second_sum
         jobs_data.append((i, first_sum, second_sum, diff))
 
-    # 3 candidate orderings
-    seq1 = [x[0] for x in sorted(jobs_data, key=lambda x: x[3], reverse=True)]
-    seq2 = [x[0] for x in sorted(jobs_data, key=lambda x: x[1], reverse=True)]
-    seq3 = [x[0] for x in sorted(jobs_data, key=lambda x: x[2])]
+    seq1 = [x[0] for x in sorted(jobs_data, key=lambda x: x[1], reverse=True)]
+    seq2 = [x[0] for x in sorted(jobs_data, key=lambda x: x[2])]
+    seq3 = [x[0] for x in sorted(jobs_data, key=lambda x: x[3], reverse=True)]
 
     candidates = [seq1, seq2, seq3]
     best = min(candidates, key=lambda s: calculate_makespan(matrix, s))
@@ -149,10 +161,10 @@ def method_petrov_sokolitsyn(matrix: np.ndarray) -> list[int]:
 
 
 METHODS = {
-    "Удалённость узкого места": method_bottleneck_distance,
-    "Ограниченный перебор (жадный)": method_greedy_limited_search,
-    "Макс. время на последнем станке": method_max_last_machine,
-    "Макс. суммарное время": method_max_total_time,
-    "Мин. время на 1-м станке": method_min_first_machine,
+    "Алгоритм Джонсона для N станков": method_johnson_n,
+    "Первое обобщение Джонсона": method_generalization_1,
+    "Второе обобщение Джонсона": method_generalization_2,
+    "Третье обобщение Джонсона": method_generalization_3,
+    "Четвёртое обобщение Джонсона": method_generalization_4,
     "Метод Петрова-Соколицына": method_petrov_sokolitsyn,
 }

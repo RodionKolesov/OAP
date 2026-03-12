@@ -5,7 +5,7 @@ from scheduling import calculate_metrics, METHODS
 from gantt import create_gantt_chart
 
 st.set_page_config(
-    page_title="OKP Scheduler",
+    page_title="Оперативно-календарное планирование",
     page_icon="⚙️",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -180,10 +180,51 @@ st.markdown("""
     border: 1px dashed rgba(255,255,255,0.15) !important;
     border-radius: 12px !important;
 }
+.stFileUploader label, .stFileUploader [data-testid="stWidgetLabel"] p {
+    color: #e0e0ff !important;
+}
+.stFileUploader [data-testid="stFileUploaderDropzone"] {
+    background: rgba(15, 12, 41, 0.8) !important;
+    border: 1px dashed rgba(102, 126, 234, 0.4) !important;
+    border-radius: 12px !important;
+}
+.stFileUploader [data-testid="stFileUploaderDropzone"] * {
+    color: #c5c8e8 !important;
+}
+.stFileUploader [data-testid="stFileUploaderDropzone"] button {
+    background: rgba(102, 126, 234, 0.2) !important;
+    border: 1px solid rgba(102, 126, 234, 0.4) !important;
+    color: #e0e0ff !important;
+}
+.stFileUploader [data-testid="stFileUploaderDropzone"] svg {
+    fill: #667eea !important;
+}
 
 /* Radio */
 .stRadio > div {
-    gap: 0.5rem;
+    gap: 0.3rem;
+}
+.stRadio > div {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+}
+.stRadio label, .stRadio p, .stRadio span {
+    color: #e0e0ff !important;
+    font-weight: 500 !important;
+}
+.stRadio [data-testid="stWidgetLabel"] p {
+    color: #e0e0ff !important;
+    font-size: 0.95rem !important;
+}
+.stRadio [role="radiogroup"] label {
+    padding: 0.35rem 0.6rem !important;
+    border-radius: 8px !important;
+    transition: background 0.15s !important;
+}
+.stRadio [role="radiogroup"] label:hover {
+    background: rgba(102, 126, 234, 0.1) !important;
 }
 
 /* Divider */
@@ -239,8 +280,8 @@ st.markdown("""
 # === HERO ===
 st.markdown("""
 <div class="hero">
-    <h1>OKP Scheduler</h1>
-    <p>Оперативно-календарное планирование производства</p>
+    <h1>Оперативно-календарное планирование</h1>
+    <p></p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -302,21 +343,8 @@ st.markdown('<div class="section-title"><span class="icon icon-blue">2</span> М
 initial_order = list(range(n_jobs))
 initial_metrics = calculate_metrics(matrix, initial_order)
 
-# Find the best method by default
 method_names = list(METHODS.keys())
-if "best_method_idx" not in st.session_state or st.session_state.get("_matrix_id") != id(matrix):
-    best_idx = 0
-    best_ms = float("inf")
-    for idx, (name, fn) in enumerate(METHODS.items()):
-        order = fn(matrix)
-        ms = calculate_metrics(matrix, order)["makespan"]
-        if ms < best_ms:
-            best_ms = ms
-            best_idx = idx
-    st.session_state["best_method_idx"] = best_idx
-    st.session_state["_matrix_id"] = id(matrix)
-
-method_name = st.selectbox("Метод", method_names, index=st.session_state["best_method_idx"], label_visibility="collapsed")
+method_name = st.radio("Метод", method_names, label_visibility="collapsed")
 
 method_fn = METHODS[method_name]
 optimized_order = method_fn(matrix)
