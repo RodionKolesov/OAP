@@ -1,22 +1,23 @@
 import numpy as np
-import plotly.figure_factory as ff
 import plotly.graph_objects as go
 from scheduling import build_completion_matrix
 
 
-# Distinct color palette for jobs
+# Vibrant neon palette for dark theme
 COLORS = [
-    "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
-    "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52",
-    "#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#9467BD",
-    "#8C564B", "#E377C2", "#7F7F7F", "#BCBD22", "#17BECF",
+    "#667eea", "#764ba2", "#00e676", "#ff5252", "#ffab40",
+    "#18ffff", "#e040fb", "#b2ff59", "#ff80ab", "#ffd740",
+    "#448aff", "#ff6e40", "#69f0ae", "#7c4dff", "#eeff41",
+    "#40c4ff", "#ff4081", "#b9f6ca", "#ea80fc", "#ffe57f",
 ]
 
 
-def create_gantt_chart(matrix: np.ndarray, job_order: list[int], title: str = "Диаграмма Ганта", job_names: list[str] | None = None) -> go.Figure:
-    """Create a Plotly Gantt chart for flow shop schedule.
-    Y-axis: machines, X-axis: time units, color-coded by job.
-    """
+def create_gantt_chart(
+    matrix: np.ndarray,
+    job_order: list[int],
+    title: str = "",
+    job_names: list[str] | None = None,
+) -> go.Figure:
     C = build_completion_matrix(matrix, job_order)
     n = len(job_order)
     m = matrix.shape[1]
@@ -39,26 +40,56 @@ def create_gantt_chart(matrix: np.ndarray, job_order: list[int], title: str = "�
             if duration == 0:
                 continue
             fig.add_trace(go.Bar(
-                y=[f"Станок {j + 1}"],
+                y=[f"M{j + 1}"],
                 x=[duration],
                 base=[start],
                 orientation="h",
-                marker=dict(color=color),
+                marker=dict(
+                    color=color,
+                    line=dict(width=0),
+                    opacity=0.85,
+                ),
                 name=job_names[i],
                 legendgroup=job_names[i],
                 showlegend=show_legend,
-                hovertemplate=f"{job_names[i]}<br>Станок {j+1}<br>Начало: {start:.0f}<br>Конец: {end:.0f}<br>Длительность: {duration:.0f}<extra></extra>",
+                hovertemplate=(
+                    f"<b>{job_names[i]}</b><br>"
+                    f"Станок {j+1}<br>"
+                    f"{start:.0f} → {end:.0f} ({duration:.0f})"
+                    f"<extra></extra>"
+                ),
             ))
             show_legend = False
 
     fig.update_layout(
-        title=title,
-        xaxis_title="Время",
-        yaxis_title="",
+        title=dict(text=title, font=dict(size=14, color="#c5c8e8")),
+        xaxis=dict(
+            title="",
+            color="#8b8fa3",
+            gridcolor="rgba(255,255,255,0.04)",
+            zeroline=False,
+        ),
+        yaxis=dict(
+            title="",
+            color="#c5c8e8",
+            autorange="reversed",
+            gridcolor="rgba(255,255,255,0.04)",
+        ),
         barmode="stack",
-        height=max(300, m * 50 + 100),
-        legend_title="Детали",
-        yaxis=dict(autorange="reversed"),
+        height=max(250, m * 45 + 80),
+        margin=dict(l=30, r=20, t=40, b=30),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(255,255,255,0.02)",
+        legend=dict(
+            font=dict(color="#c5c8e8", size=11),
+            bgcolor="rgba(0,0,0,0)",
+            orientation="h",
+            yanchor="bottom",
+            y=-0.3,
+            xanchor="center",
+            x=0.5,
+        ),
+        font=dict(family="Inter, sans-serif"),
     )
 
     return fig
