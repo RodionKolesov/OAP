@@ -1,3 +1,5 @@
+# numpy — библиотека для работы с многомерными массивами и математическими вычислениями;
+# используется для хранения матрицы времён обработки и построения матрицы завершения
 import numpy as np
 
 
@@ -42,7 +44,9 @@ def calculate_metrics(matrix: np.ndarray, job_order: list[int]) -> dict:
     }
 
 
-# === Optimization Methods ===
+# === Методы оптимизации ===
+# Каждый метод принимает матрицу времён обработки (n деталей × m станков)
+# и возвращает оптимизированный порядок запуска деталей (список индексов)
 
 
 def method_johnson_n(matrix: np.ndarray) -> list[int]:
@@ -160,6 +164,8 @@ def method_petrov_sokolitsyn(matrix: np.ndarray) -> list[int]:
     return best
 
 
+# Словарь доступных методов оптимизации: название → функция
+# Используется в app.py для выбора метода через интерфейс
 METHODS = {
     "Алгоритм Джонсона для N станков": method_johnson_n,
     "Первое обобщение Джонсона": method_generalization_1,

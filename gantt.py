@@ -1,9 +1,14 @@
+# numpy — библиотека для работы с многомерными массивами; используется для операций над матрицей времён
 import numpy as np
+# plotly.graph_objects — модуль библиотеки Plotly для построения интерактивных графиков;
+# класс Figure — контейнер графика, класс Bar — горизонтальные столбцы для диаграммы Ганта
 import plotly.graph_objects as go
+# build_completion_matrix — функция из модуля scheduling, вычисляющая матрицу времён завершения
+# операций на каждом станке для заданного порядка деталей
 from scheduling import build_completion_matrix
 
 
-# Vibrant neon palette for dark theme
+# Неоновая цветовая палитра для тёмной темы — каждый цвет соответствует отдельной детали на диаграмме
 COLORS = [
     "#667eea", "#764ba2", "#00e676", "#ff5252", "#ffab40",
     "#18ffff", "#e040fb", "#b2ff59", "#ff80ab", "#ffd740",

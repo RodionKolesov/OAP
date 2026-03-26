@@ -1,7 +1,12 @@
+# streamlit — фреймворк для создания интерактивных веб-приложений на Python
 import streamlit as st
+# pandas — библиотека для работы с табличными данными (DataFrame)
 import pandas as pd
+# numpy — библиотека для работы с многомерными массивами и математическими операциями
 import numpy as np
+# scheduling — модуль проекта: расчёт метрик расписания и методы оптимизации порядка деталей
 from scheduling import calculate_metrics, METHODS
+# gantt — модуль проекта: построение диаграммы Ганта с помощью Plotly
 from gantt import create_gantt_chart
 
 st.set_page_config(
